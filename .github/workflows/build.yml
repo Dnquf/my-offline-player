@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -12,7 +12,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Cordova
         run: npm install -g cordova
@@ -23,12 +23,17 @@ jobs:
           cp index.html AudioApp/www/index.html
           cd AudioApp
           cordova platform add ios
-          cordova build ios --emulator
+          cordova build ios --emulator --nobuild
+
+      - name: Compile App with xcodebuild
+        run: |
+          cd AudioApp/platforms/ios
+          xcodebuild -workspace OfflinePlayer.xcworkspace -scheme OfflinePlayer -configuration Debug -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 
       - name: Package to IPA
         run: |
-          mkdir Payload
-          cp -r AudioApp/platforms/ios/build/emulator/OfflinePlayer.app Payload/
+          mkdir -p Payload
+          cp -r AudioApp/platforms/ios/build/emulator/OfflinePlayer.app Payload/ || cp -r ~/Library/Developer/Xcode/DerivedData/OfflinePlayer-*/Build/Products/Debug-iphonesimulator/OfflinePlayer.app Payload/
           zip -r OfflinePlayer.ipa Payload
 
       - name: Upload IPA Artifact
